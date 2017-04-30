@@ -1,6 +1,7 @@
 import unittest
 import os
 import helper
+import numpy as np
 
 class TestHelper(unittest.TestCase):
 
@@ -40,6 +41,23 @@ class TestHelper(unittest.TestCase):
         self.assertTrue(param_dict['alpha']<=1)
         self.assertTrue(param_dict['num_class']==10)
         self.assertTrue(param_dict['objective']=='multi:softprob')
+
+    def test_validation_generator(self):
+        X,y = (np.random.randn(100,3), np.random.randint(0,2,100))
+        it  = helper.split_train_validation_data(X,y,10)
+        indices = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+        i=0
+        for X_train, y_train, X_valid, y_valid in it:
+            if i < len(indices)-2:
+                self.assertTrue((X_valid==X[indices[i]:indices[i+1]]).sum()==30)
+            else:
+                self.assertTrue((X_valid==X[indices[-2]:]).sum()==30)
+            #print(X[indices[i]:indices[i+1]])
+            self.assertTrue(X_train.shape[0]==90)
+            self.assertTrue(y_train.shape[0]==90)
+            self.assertTrue(len(X_valid)==10)
+            self.assertTrue(len(y_valid)==10)
+            i += 1
 
 if __name__ == '__main__':
     f = open('test_params','w')

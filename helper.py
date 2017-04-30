@@ -14,13 +14,51 @@ RandomForestClassifier(n_estimators=10, criterion='gini',
 '''
 
 
+def split_train_validation_data(X, y, num_splits):
+    '''Iterator to create train validation pairs for data and the corresponding labels
+    -----------
+    X: numpy.array
+    Data matrix
+
+    y:
+    labels
+
+    validation_percentage: float
+    Size of each single validation set that is yielded by the iterator as percentage.
+
+    Returns:
+    --------
+    train_X: numpy.array
+    Training data of the split.
+
+    train_y: numpy.array
+    Training labels of the split.
+
+    validation_X: numpy.array
+    Validation data of the split.
+
+    validation_y: numpy.array
+    Validation labels of the split
+    '''
+
+    indices = list(np.arange(0, len(X), np.round(len(X)/num_splits)).astype(np.int32))
+    for i in range(len(indices)):
+        if i == len(indices)-1:
+            yield X[:indices[-1]], y[:indices[-1]], X[indices[-1]:],  y[indices[-1]:]
+        else:
+            train_X = np.vstack([X[:indices[i]], X[indices[i+1]:]])
+            validation_X = X[indices[i]:indices[i+1]]
+            train_y = np.concatenate([y[:indices[i]], y[indices[i+1]:]], axis=0)
+            validation_y = y[indices[i]:indices[i+1]]
+            yield train_X, train_y, validation_X, validation_y
+
 def read_param_file(params_path):
     '''Reads parameters from the given filepath and returns them in a dictionary
     -----------
     None
 
     Returns:
-
+    --------
     params: dictionary
     Contains the parameters used for training the gradient boosting model.
     '''
@@ -49,7 +87,7 @@ def generate_xgb_random_params(params_path,mode='c'):
     None
 
     Returns:
-
+    --------
     params: dictionary
     Contains the parameters used for training the gradient boosting model.
     '''

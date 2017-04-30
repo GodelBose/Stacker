@@ -67,10 +67,25 @@ class BaseModel:
             self.model = xgb.train(self.params, X_train, self.num_rounds)
 
     def predict(self, X):
-        #print(X.shape)
+        '''Returns model predictions for the data matrix X:
+        -----------
+
+        X: numpy.array
+        Data with axis n x m with "n" being the amount of instances and "m" the amount of features.
+
+
+        Returns:
+        --------
+        predictions: numpy.array
+        Predictions made by the wrapped model.
+        '''
         if 'xgb' in self.name:
             X = xgb.DMatrix(X)
         return self.model.predict(X)
 
     def predict_proba(self, X):
-        return self.model.predict_proba(X)
+        #print(X.shape)
+        if 'xgb' in self.name:
+            self.predict(X)
+        else:
+            return self.model.predict_proba(X)
