@@ -47,7 +47,7 @@ class TestHelper(unittest.TestCase):
         it  = helper.split_train_validation_data(X,y,10)
         indices = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
         i=0
-        for X_train, y_train, X_valid, y_valid in it:
+        for X_train, y_train, X_valid, y_valid, _, _ in it:
             if i < len(indices)-2:
                 self.assertTrue((X_valid==X[indices[i]:indices[i+1]]).sum()==30)
             else:

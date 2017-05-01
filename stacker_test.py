@@ -3,13 +3,17 @@ import os
 import helper
 from stacker import Stacker
 from sklearn.datasets import make_classification
+from feature_builder import FeatureBuilder
+import pandas as pd
+import numpy as np
 
 class TestStacker(unittest.TestCase):
 
     def test_init(self):
         models = ['xgb' for x in range(5)]
         params = ['test_params' for x in range(5)]
-        meta_clf = Stacker('xgb', models, 10, meta_model_params='test_params', base_model_params=params)
+        feature_builder = FeatureBuilder([], [])
+        meta_clf = Stacker('xgb', models, 10, feature_builder, meta_model_params='test_params', base_model_params=params)
         self.assertEqual(meta_clf.meta_model.name, 'xgb')
         self.assertEqual(meta_clf.meta_model.params['num_class'], 10)
         self.assertTrue(meta_clf.meta_model.num_rounds>=10)
@@ -21,14 +25,49 @@ class TestStacker(unittest.TestCase):
         num_classes = 10
         models = ['xgb' for x in range(5)]
         params = ['test_params' for x in range(5)]
-        meta_clf = Stacker('xgb', models, 10, meta_model_params='test_params', base_model_params=params)
+        fb = FeatureBuilder([], [])
+        meta_clf = Stacker('xgb', models, 10, fb, meta_model_params='test_params', base_model_params=params)
         self.assertEqual(meta_clf.meta_model.name, 'xgb')
         X,y = make_classification(n_samples=n_samples, n_features=n_features, n_informative=5, n_redundant=3, n_classes=num_classes)
         meta_prediction = meta_clf.generate_base_model_predictions(X,y)
-        print(meta_prediction.shape)
         self.assertTrue(meta_prediction.shape[0]==n_samples)
         self.assertTrue(meta_prediction.shape[1]==num_classes*len(models))
 
+    def test_stacker_historic_fit(self):
+        n_samples = 5000
+        n_features = 15
+        num_classes = 10
+        models = ['xgb' for x in range(5)]
+        params = ['test_params' for x in range(5)]
+        X,y = make_classification(n_samples=n_samples, n_features=n_features, n_informative=5, n_redundant=3, n_classes=num_classes)
+        df = pd.DataFrame({'feature_'+str(i):X[:,i] for i in range(X.shape[1])})
+        df['ID'] = np.random.randint(0,100,n_samples)
+        historical_df = df[:2500]
+
+        def create_f1(df):
+            squares = df.feature_2.apply(lambda x: x*2)
+            return squares.values
+
+        def create_f2(df):
+            some_feature = df.feature_3.apply(lambda x: np.sin(x)/np.cos(x*2))
+            return some_feature.values
+
+        def create_historic_f1(df, historical=historical_df):
+            value_dict = historical[['ID', 'feature_1']].groupby('ID').mean().to_dict()
+            historical_feature = df.ID.apply(lambda x: value_dict['feature_1'].get(x,0))
+            return historical_feature
+
+        def create_historic_f2(df, historical=historical_df):
+            value_dict = historical[['ID', 'feature_5']].groupby('ID').median().to_dict()
+            historical_feature = df.ID.apply(lambda x: value_dict['feature_5'].get(x,0))
+            return historical_feature
+
+        non_historical_features = [create_f1, create_f2]
+        historical_features = [create_historic_f1, create_historic_f2]
+        fb = FeatureBuilder(non_historical_features, historical_features)
+        meta_clf = Stacker('xgb', models, 10, fb, meta_model_params='test_params', base_model_params=params)
+        meta_clf.fit(X, y, df)
+        self.assertTrue(meta_clf.predict(X[-1000:], df=df[-1000:], historical_df=df).shape[0]==1000)
 
 if __name__ == '__main__':
     f = open('test_params','w')

@@ -44,13 +44,13 @@ def split_train_validation_data(X, y, num_splits):
     indices = list(np.arange(0, len(X), np.round(len(X)/num_splits)).astype(np.int32))
     for i in range(len(indices)):
         if i == len(indices)-1:
-            yield X[:indices[-1]], y[:indices[-1]], X[indices[-1]:],  y[indices[-1]:]
+            yield X[:indices[-1]], y[:indices[-1]], X[indices[-1]:],  y[indices[-1]:], indices[-1], len(y)
         else:
             train_X = np.vstack([X[:indices[i]], X[indices[i+1]:]])
             validation_X = X[indices[i]:indices[i+1]]
             train_y = np.concatenate([y[:indices[i]], y[indices[i+1]:]], axis=0)
             validation_y = y[indices[i]:indices[i+1]]
-            yield train_X, train_y, validation_X, validation_y
+            yield train_X, train_y, validation_X, validation_y, indices[i], indices[i+1]
 
 def read_param_file(params_path):
     '''Reads parameters from the given filepath and returns them in a dictionary
