@@ -58,12 +58,17 @@ class Stacker:
         '''
         model_predictions = []
         for model in self.base_models:
+            is_xgb = True if 'xgb' in model.name else False
+            is_c = True if 'c' == model.name[0] else False
             split_predictions = []
             it  = helper.split_train_validation_data(X,y,self.num_splits)
             for X_train, y_train, X_valid, y_valid, index1, index2 in it:
                 if not isinstance(df, pd.DataFrame):
                     model.fit(X_train, y_train)
-                    split_predictions.append(model.predict(X_valid))
+                    if is_xgb or not is_c:
+                        split_predictions.append(model.predict(X_valid))
+                    else:
+                        split_predictions.append(model.predict_proba(X_valid))
                 else:
                     historical_df = df[index1:index2]
                     df_temp = pd.concat([df[:index1], df[index2:]])
@@ -73,17 +78,25 @@ class Stacker:
                     X_train = np.hstack([X_train, train_historical_features])
                     X_valid = np.hstack([X_valid, validation_historical_features])
                     model.fit(X_train, y_train)
-                    split_predictions.append(model.predict(X_valid))
+                    if is_xgb or not is_c:
+                        split_predictions.append(model.predict(X_valid))
+                    else:
+                        split_predictions.append(model.predict_proba(X_valid))
             model_predictions.append(np.vstack(split_predictions))
         return np.hstack(model_predictions)
 
     def generate_new_base_model_predictions(self, X, df, historical_df):
         model_predictions = []
         for model in self.base_models:
+            is_xgb = True if 'xgb' in model.name else False
+            is_c = True if 'c' == model.name[0] else False
             if isinstance(df, pd.DataFrame):
                 historical_features = self.feature_builder.create_historical_features(df, historical_df)
                 X_temp = np.hstack([X, historical_features])
-            model_predictions.append(model.predict(X_temp))
+            if is_xgb or not is_c:
+                model_predictions.append(model.predict(X_temp))
+            else:
+                model_predictions.append(model.predict_proba(X_temp))
         return np.hstack(model_predictions)
 
     def fit(self, X, y, df=None):

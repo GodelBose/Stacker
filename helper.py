@@ -1,19 +1,6 @@
 import re
 import numpy as np
 
-'''
-DecisionTreeClassifier(criterion='gini',
-splitter='best', max_depth=None, min_samples_split=2, min_samples_leaf=1,
-min_weight_fraction_leaf=0.0, max_features=None, random_state=None, max_leaf_nodes=None,
-min_impurity_split=1e-07, class_weight=None, presort=False)
-
-RandomForestClassifier(n_estimators=10, criterion='gini',
- max_depth=None, min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0,
-  max_features='auto', max_leaf_nodes=None, min_impurity_split=1e-07, bootstrap=True,
-   oob_score=False, n_jobs=1, random_state=None, verbose=0, warm_start=False, class_weight=None)
-'''
-
-
 def split_train_validation_data(X, y, num_splits):
     '''Iterator to create train validation pairs for data and the corresponding labels
     -----------
@@ -120,3 +107,33 @@ def generate_xgb_random_params(params_path,mode='c'):
         else:
             params[key] = value[1]
     return params, num_rounds
+
+def generate_rf_random_params(params_path,mode='c'):
+    '''Generates random parameters for training a random forest model.
+    Parameters:
+    -----------
+    None
+
+    Returns:
+    --------
+    params: dictionary
+    Contains the parameters used for training the gradient boosting model.
+    '''
+    params_dict = read_param_file(params_path)
+    params = {}
+    # filling in default values
+    params['n_estimators'] = 10
+    params['max_depth'] = 9
+    params['min_samples_split'] = 2
+    params['min_samples_leaf'] = 1
+    params['max_leaf_nodes'] = 0
+    params['min_impurity_split'] = 1e-7
+    params['n_jobs'] = -1
+    int_params = ['n_estimators', 'max_depth', 'min_samples_split', 'min_samples_leaf', 'max_leaf_nodes']
+    float_params = ['min_impurity_split']
+    for key,value in params_dict.items():
+        if key in int_params:
+            params[key] = np.random.randint(int(value[1]),int(value[2]))
+        elif key in float_params:
+            params[key] = np.random.uniform(float(value[1]),float(value[2]))
+    return params

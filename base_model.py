@@ -39,7 +39,7 @@ class BaseModel:
         if self.name == 'c-tree':
             print(0)
         elif self.name == 'c-rf':
-            print(0)
+            self.params = helper.generate_rf_random_params(params_path)
         elif self.name == 'xgb':
             self.params, self.num_rounds = helper.generate_xgb_random_params(params_path)
         elif self.name == 'r-tree':
@@ -65,6 +65,14 @@ class BaseModel:
         if 'xgb' in self.name:
             X_train = xgb.DMatrix(X, label=y)
             self.model = xgb.train(self.params, X_train, self.num_rounds)
+        elif 'rf' in self.name:
+            params = self.params
+            model = RandomForestClassifier(n_estimators=params['n_estimators'], criterion='gini',
+                                            max_depth=params['max_depth'], min_samples_split=params['min_samples_split'], min_samples_leaf=params['min_samples_leaf'],
+                                            max_leaf_nodes=params['max_leaf_nodes'],
+                                            n_jobs=params['n_jobs'])
+            model.fit(X,y)
+            self.model = model
 
     def predict(self, X):
         '''Returns model predictions for the data matrix X:
