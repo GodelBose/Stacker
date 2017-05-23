@@ -42,7 +42,8 @@ def split_train_validation_data(X, y, num_splits):
 def read_param_file(params_path):
     '''Reads parameters from the given filepath and returns them in a dictionary
     -----------
-    None
+    params_path:string
+    Path to the file containing the parameter data.
 
     Returns:
     --------
@@ -67,11 +68,12 @@ def read_param_file(params_path):
     f.close()
     return param_dict
 
-def generate_xgb_random_params(params_path,mode='c'):
+def generate_xgb_params(params_path,mode='c'):
     '''Generates random parameters for training a gradient boosting model.
     Parameters:
     -----------
-    None
+    params_path:string
+    Path to the file containing the parameter data.
 
     Returns:
     --------
@@ -108,11 +110,12 @@ def generate_xgb_random_params(params_path,mode='c'):
             params[key] = value[1]
     return params, num_rounds
 
-def generate_rf_random_params(params_path,mode='c'):
+def generate_rf_params(params_path,mode='c'):
     '''Generates random parameters for training a random forest model.
     Parameters:
     -----------
-    None
+    params_path:string
+    Path to the file containing the parameter data.
 
     Returns:
     --------
@@ -137,3 +140,38 @@ def generate_rf_random_params(params_path,mode='c'):
         elif key in float_params:
             params[key] = np.random.uniform(float(value[1]),float(value[2]))
     return params
+
+def read_params(params_path, mode):
+    '''Reads already set parameter values for a given model from the given filepath.
+    Parameters:
+    -----------
+    params_path:string
+    Path to the file containing the parameter data.
+
+    Returns:
+    --------
+    params: dictionary
+    Contains the parameters used for initializing the model.
+    '''
+    f = open(params_path,'r')
+    txt = f.readline()
+    if mode =='xgb':
+        int_params = ['min_child_weight', 'max_depth', 'num_class', 'num_rounds', 'silent']
+        float_params = ['eta', 'colsample_bytree', 'colsample_bylevel', 'lambda', 'alpha', 'subsample', 'gamma']
+    elif mode=='rf':
+        int_params = ['n_estimators', 'max_depth', 'min_samples_split', 'min_samples_leaf', 'max_leaf_nodes', 'n_jobs']
+        float_params = ['min_impurity_split']
+    param_dict = {}
+    while txt!='':
+        param_data = txt.split(':')
+        param = re.sub('[^A-Za-z_]','',re.sub(' ','',param_data[0]))
+        if param in int_params + float_params:
+            param_dict[param] = int(re.sub('[^0-9\.]','',txt)) if param in int_params else float(re.sub('[^0-9\.]','',txt))
+        else:
+            param_dict[param] = re.sub('-',':',re.sub('[ \\n]','',param_data[1]))
+        txt = f.readline()
+    f.close()
+    if mode =='xgb':
+        return param_dict, int(param_dict['num_rounds'])
+    else:
+        return param_dict

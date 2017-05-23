@@ -2,6 +2,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 import xgboost as xgb
 import helper
+import re
+
 class BaseModel:
 
     def __init__(self, name, params_path=''):
@@ -36,12 +38,22 @@ class BaseModel:
         --------
         -
         '''
+        f = open(params_path)
+        txt = f.read()
+        f.close()
+        random_init = True if re.findall('min=',txt)!=[] else False
         if self.name == 'c-tree':
             print(0)
         elif self.name == 'c-rf':
-            self.params = helper.generate_rf_random_params(params_path)
+            if random_init:
+                self.params = helper.generate_rf_params(params_path)
+            else:
+                self.params = helper.read_params(params_path, 'rf')
         elif self.name == 'xgb':
-            self.params, self.num_rounds = helper.generate_xgb_random_params(params_path)
+            if random_init:
+                self.params, self.num_rounds = helper.generate_xgb_params(params_path)
+            else:
+                self.params, self.num_rounds = helper.read_params(params_path, 'xgb')
         elif self.name == 'r-tree':
             print(0)
         elif self.name == 'r-rf':
